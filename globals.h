@@ -14,7 +14,10 @@ typedef struct{
 #define latIdx '2'
 #define filIdx '3'
 
+#define esp_price 10
+#define lat_price 12
+#define fil_price  8
 
-//void intToStr(int N, char *str);
+extern Product esp, lat, fil;
 
 #endif //GLOBALS_H_
