@@ -24,6 +24,8 @@
 #include "tm4c123gh6pm.h"
 #include "emp_type.h"
 
+#include "coffee_machine.h"
+
 #include "globals.h"
 
 #include "FreeRTOS.h"
@@ -35,30 +37,6 @@
 #include "queue.h"
 
 /*****************************    Defines    *******************************/
-#define taskDelay 100 //ms
-
-#define esp_price 15
-#define lat_price 27
-#define fil_price 3
-
-#define menu_length 3
-
-#define LED_R  0x02   // PF1
-#define LED_Y  0x04   // PF2
-#define LED_G  0x08   // PF3
-#define LED_ALL (LED_R | LED_Y | LED_G)
-
-#define CARD_CODE_MAX 16
-#define CARD_IDX_MAX 20
-
-#define GRINDING_MS 7500
-#define BREWING_MS 14000
-#define FROTHING_MS 6200
-#define SLOW_FILTER_MS 3000
-#define SLOW_FILTER_VEL 0.6
-
-#define DISPLAY_LEN 7
-#define TEMP_LEN 5
 
 /*****************************   Constants   *******************************/
 
@@ -151,7 +129,7 @@ void coffee_machine_task( void *pvParameters )
     uint8_t method = '0';
 
     // Card method
-    char card_numb[CARD_CODE_MAX+1];
+    char card_numb[CARD_NUM_MAX+1];
     char card_code[5];
     INT8U card_idx = 0;
     uint8_t pressed_number;
@@ -336,11 +314,11 @@ void coffee_machine_task( void *pvParameters )
                         if (xQueueReceive(xKeypad_Queue, &pressed_number, pdMS_TO_TICKS(QUEUE_MAX_WAIT)) == pdPASS)
                         {
 
-                            if (card_idx < card_code_len)
+                            if (card_idx < CARD_NUM_MAX)
                             {
                                 card_numb[card_idx] = pressed_number;
                                 card_idx++;
-                                char display_card_str[18] = {'\0'};
+                                char display_card_str[CARD_NUM_MAX+2] = {'\0'};
                                 strcat(display_card_str,"00");
                                 strcat(display_card_str,card_numb);
 
@@ -348,10 +326,10 @@ void coffee_machine_task( void *pvParameters )
                             }
                             else if (card_idx < CARD_IDX_MAX)
                             {
-                                INT8U code_idx = card_idx-card_code_len;
+                                INT8U code_idx = card_idx-CARD_NUM_MAX;
                                 card_code[code_idx] = pressed_number;
                                 card_idx++;
-                                char display_code_str[18] = {'\0'};
+                                char display_code_str[CARD_NUM_MAX+2] = {'\0'};
                                 strcat(display_code_str,"10");
                                 strcat(display_code_str,card_code);
                                 xQueueSendToBack(xLCD_Queue,display_code_str,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
@@ -359,7 +337,7 @@ void coffee_machine_task( void *pvParameters )
 
                             if (card_idx == CARD_IDX_MAX)
                             {
-                                int last_numb = card_numb[15] - '0';
+                                int last_numb = card_numb[CARD_NUM_MAX-1] - '0';
                                 int last_code = card_code[3] - '0';
 
                                 if ((last_numb % 2) == (last_code % 2))
@@ -582,10 +560,10 @@ void coffee_machine_task( void *pvParameters )
 
                                             GPIO_PORTF_DATA_R &= ~LED_Y;
                                             if (coffeeTimer <= SLOW_FILTER_MS)
-                                                amountCoffee += 0.6f/4;
+                                                amountCoffee += SLOW_FILTER_VEL/FREQ;
                                             else
-                                                amountCoffee += 1.45f/4;
-                                            coffeeTimer+=250;
+                                                amountCoffee += FILTER_VEL/FREQ;
+                                            coffeeTimer+=PERIOD;
 
                                             char display_unit_price[DISPLAY_LEN] = {'\0'};
                                             char unit_price[TEMP_LEN];
@@ -612,7 +590,7 @@ void coffee_machine_task( void *pvParameters )
                                             xQueueSendToBack(xLCD_Queue, display_str, pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                             xQueueSendToBack(xLCD_Queue, "15""dkk", pdMS_TO_TICKS(QUEUE_MAX_WAIT));
 
-                                            vTaskDelay(pdMS_TO_TICKS(250));
+                                            vTaskDelay(pdMS_TO_TICKS(PERIOD));
                                         }
                                         if (amountCoffee*cur_bev.price >= current_money)
 
@@ -720,11 +698,11 @@ void coffee_machine_task( void *pvParameters )
                                         {
 
                                             GPIO_PORTF_DATA_R &= ~LED_Y;
-                                            if (coffeeTimer <= 3000)
-                                                amountCoffee += 0.6f/4;
+                                            if (coffeeTimer <= SLOW_FILTER_MS)
+                                                amountCoffee += SLOW_FILTER_VEL/FREQ;
                                             else
-                                                amountCoffee += 1.45f/4;
-                                            coffeeTimer+=250;
+                                                amountCoffee += FILTER_VEL/FREQ;
+                                            coffeeTimer+=PERIOD;
 
                                             char display_unit_price[DISPLAY_LEN] = {'\0'};
                                             char unit_price[TEMP_LEN];
@@ -751,7 +729,7 @@ void coffee_machine_task( void *pvParameters )
                                             xQueueSendToBack(xLCD_Queue, display_str, pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                             xQueueSendToBack(xLCD_Queue, "15""dkk", pdMS_TO_TICKS(QUEUE_MAX_WAIT));
 
-                                            vTaskDelay(pdMS_TO_TICKS(250));
+                                            vTaskDelay(pdMS_TO_TICKS(PERIOD));
                                         }
                                     }
                                 }

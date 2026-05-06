@@ -28,6 +28,35 @@
 #include "queue.h"
 
 /*****************************    Defines    *******************************/
+#define taskDelay 100 //ms
+
+#define esp_price 15
+#define lat_price 27
+#define fil_price 3
+
+#define menu_length 3
+
+#define LED_R  0x02   // PF1
+#define LED_Y  0x04   // PF2
+#define LED_G  0x08   // PF3
+#define LED_ALL (LED_R | LED_Y | LED_G)
+
+#define CARD_NUM_MAX 16
+#define CARD_CODE_MAX 4
+#define CARD_IDX_MAX 20
+
+#define GRINDING_MS 7500
+#define BREWING_MS 14000
+#define FROTHING_MS 6200
+#define SLOW_FILTER_MS 3000
+#define SLOW_FILTER_VEL 0.6f
+#define FILTER_VEL 1.45f
+
+#define DISPLAY_LEN 7
+#define TEMP_LEN 5
+
+#define FREQ 4
+#define PERIOD 250
 
 /*****************************   Constants   *******************************/
 
