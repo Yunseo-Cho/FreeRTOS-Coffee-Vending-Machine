@@ -43,26 +43,26 @@ extern QueueHandle_t xEnc_rotary_Queue , xEnc_Button_Queue;
 /*****************************   Functions   *******************************/
 void rot_enc_init(void)
 {
-int dummy;
-SYSCTL_RCGC2_R  |=  SYSCTL_RCGC2_GPIOA;
+    volatile int dummy;
+    SYSCTL_RCGC2_R  |=  SYSCTL_RCGC2_GPIOA;
 
-// Do a dummy read to insert a few cycles after enabling the peripheral.
-dummy = SYSCTL_RCGC2_R;
+    // Do a dummy read to insert a few cycles after enabling the peripheral.
+    dummy = SYSCTL_RCGC2_R;
 
-GPIO_PORTA_DIR_R &= ~0xE0;       // PA5, PA6, PA7 as INPUT
-GPIO_PORTA_DEN_R |=  0xE0;       // Enable digital function
-GPIO_PORTA_PUR_R |=  0xE0;       // Enable pull-up resistors
+    GPIO_PORTA_DIR_R &= ~0xE0;       // PA5, PA6, PA7 as INPUT
+    GPIO_PORTA_DEN_R |=  0xE0;       // Enable digital function
+    GPIO_PORTA_PUR_R |=  0xE0;       // Enable pull-up resistors
 }
 
 
 INT8U rotary_read()
 {
-return (ENC_A << 1) | ENC_B;
+    return (ENC_A << 1) | ENC_B;
 }
 
 INT8U button_read()
 {
-return (ENC_P2);
+    return (ENC_P2);
 }
 
 
@@ -153,7 +153,7 @@ void rotary_task(void *pvParameters)
 
 
 
-            xQueueOverwrite(xEnc_rotary_Queue, &coin);
+            xQueueSend(xEnc_rotary_Queue, &coin, 0);
 
             }
             else if (flag == 1)
@@ -161,6 +161,7 @@ void rotary_task(void *pvParameters)
                 flag = 0;
             }
             pre_AB = AB;
+            coin = 0;
         }
 
         vTaskDelay(pdMS_TO_TICKS(1));
