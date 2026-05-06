@@ -25,13 +25,11 @@
 #include "emp_type.h"
 
 #include "coffee_machine.h"
-
 #include "globals.h"
+#include "lcd_commands.h"
 
 #include "FreeRTOS.h"
 #include "rtos_def.h"
-
-#include "lcd_commands.h"
 
 #include "task.h"
 #include "queue.h"
@@ -39,15 +37,14 @@
 /*****************************    Defines    *******************************/
 
 /*****************************   Constants   *******************************/
-
 enum state {IDLE, SELECTION, PAYMENT, PRODUCTION} current_state;
 // inputs
 extern QueueHandle_t xEnc_rotary_Queue, xEnc_Button_Queue, xKeypad_Queue, xSW1_Queue, xSW2_Queue;
 // outputs
 extern QueueHandle_t xLCD_Queue, xInterface_Queue;
 
-/*****************************   Functions   *******************************/
 
+/*****************************   Functions   *******************************/
 void intToStr(INT16S N, char *str)
 /*****************************************************************************
 *   Input    :
@@ -285,7 +282,7 @@ void coffee_machine_task( void *pvParameters )
                                         blinkReturnAmount( difference );
                                     }
                                     xQueueSendToBack(xLCD_Queue,"10""complete",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
-                                    vTaskDelay(pdMS_TO_TICKS(100));
+                                    vTaskDelay(pdMS_TO_TICKS(SHOW_TEXT));
                                     current_state = PRODUCTION;
                                     inserted_money = 0;
                                     current_money = 0;
@@ -298,9 +295,10 @@ void coffee_machine_task( void *pvParameters )
                                 }
                                 else
                                 {
+                                    xQueueSendToBack(xLCD_Queue,CLEAR,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                     xQueueSendToBack(xLCD_Queue,"00""Insufficient dkk",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                     stop = 0;
-                                    vTaskDelay(pdMS_TO_TICKS(200));
+                                    vTaskDelay(pdMS_TO_TICKS(SHOW_TEXT));
                                 }
                             }
 
@@ -338,7 +336,7 @@ void coffee_machine_task( void *pvParameters )
                             if (card_idx == CARD_IDX_MAX)
                             {
                                 int last_numb = card_numb[CARD_NUM_MAX-1] - '0';
-                                int last_code = card_code[3] - '0';
+                                int last_code = card_code[CARD_CODE_MAX-1] - '0';
 
                                 if ((last_numb % 2) == (last_code % 2))
                                 {
@@ -412,7 +410,7 @@ void coffee_machine_task( void *pvParameters )
                                     {
                                         xQueueSendToBack(xLCD_Queue,CLEAR,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                         xQueueSendToBack(xLCD_Queue,"00""Cup taken",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
-                                        vTaskDelay(1000);
+                                        vTaskDelay(SHOW_TEXT);
                                         current_state = IDLE;
                                         if (method == '1')
                                         {
@@ -466,7 +464,7 @@ void coffee_machine_task( void *pvParameters )
                                     {
                                         xQueueSendToBack(xLCD_Queue,CLEAR,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                         xQueueSendToBack(xLCD_Queue,"00""Cup taken",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
-                                        vTaskDelay(1000);
+                                        vTaskDelay(SHOW_TEXT);
                                         current_state = IDLE;
                                         if (method == '1')
                                         {
@@ -512,13 +510,13 @@ void coffee_machine_task( void *pvParameters )
                                                 xQueueSendToBack(xLCD_Queue,"00""Inactive",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                                 inactivity_count++;
                                                 GPIO_PORTF_DATA_R |= LED_Y;
-                                                vTaskDelay(pdMS_TO_TICKS(1000));
+                                                vTaskDelay(pdMS_TO_TICKS(INACTIVE_MS));
                                                 xQueueSendToBack(xLCD_Queue,CLEAR, pdMS_TO_TICKS(QUEUE_MAX_WAIT));
 
                                             }
                                         }
 
-                                        if (inactivity_count >= 5)
+                                        if (inactivity_count >= INACTIVITY_TIME)
                                         {
                                             xQueueSendToBack(xLCD_Queue,CLEAR,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                             GPIO_PORTF_DATA_R |= LED_ALL;
@@ -529,7 +527,7 @@ void coffee_machine_task( void *pvParameters )
                                                 {
                                                     xQueueSendToBack(xLCD_Queue,CLEAR,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                                     xQueueSendToBack(xLCD_Queue,"00""Cup taken",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
-                                                    vTaskDelay(1000);
+                                                    vTaskDelay(SHOW_TEXT);
                                                     current_state = IDLE;
                                                     if (method == '1')
                                                     {
@@ -574,7 +572,7 @@ void coffee_machine_task( void *pvParameters )
                                             xQueueSendToBack(xLCD_Queue, "02""dkk", pdMS_TO_TICKS(QUEUE_MAX_WAIT));
 
                                             char display_amount[DISPLAY_LEN] = {'\0'};
-                                            char coffeeamount[5];
+                                            char coffeeamount[TEMP_LEN];
                                             intToStr(amountCoffee, coffeeamount);
                                             strcat(display_amount, "07");
                                             strcat(display_amount, coffeeamount);
@@ -596,7 +594,7 @@ void coffee_machine_task( void *pvParameters )
 
                                         {
                                             xQueueSendToBack(xLCD_Queue,"00""Done - Total:",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
-                                            vTaskDelay(pdMS_TO_TICKS(5000));
+                                            vTaskDelay(pdMS_TO_TICKS(SHOW_RESULT));
                                             xQueueSendToBack(xLCD_Queue,CLEAR,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                             GPIO_PORTF_DATA_R |= LED_ALL;
                                             while(1)
@@ -606,7 +604,7 @@ void coffee_machine_task( void *pvParameters )
                                                 {
                                                     xQueueSendToBack(xLCD_Queue,CLEAR,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                                     xQueueSendToBack(xLCD_Queue,"00""Cup taken",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
-                                                    vTaskDelay(1000);
+                                                    vTaskDelay(SHOW_TEXT);
                                                     current_state = IDLE;
                                                     snprintf(msg, sizeof(msg), "%c %s %f",
                                                                                 cur_bev.idx,
@@ -640,13 +638,13 @@ void coffee_machine_task( void *pvParameters )
                                                 xQueueSendToBack(xLCD_Queue,"00""Inactive",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                                 inactivity_count++;
                                                 GPIO_PORTF_DATA_R |= LED_Y;
-                                                vTaskDelay(pdMS_TO_TICKS(1000));
+                                                vTaskDelay(pdMS_TO_TICKS(INACTIVE_MS));
                                                 xQueueSendToBack(xLCD_Queue,CLEAR, pdMS_TO_TICKS(QUEUE_MAX_WAIT));
 
                                             }
                                         }
 
-                                        if (inactivity_count >= 5)
+                                        if (inactivity_count >= INACTIVITY_TIME)
                                         {
                                             xQueueSendToBack(xLCD_Queue,CLEAR,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                             xQueueSendToBack(xLCD_Queue,"00""Total amount",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
@@ -669,7 +667,7 @@ void coffee_machine_task( void *pvParameters )
                                             xQueueSendToBack(xLCD_Queue, display_amount, pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                             xQueueSendToBack(xLCD_Queue, "19""cl", pdMS_TO_TICKS(QUEUE_MAX_WAIT));
 
-                                            vTaskDelay(pdMS_TO_TICKS(5000));
+                                            vTaskDelay(pdMS_TO_TICKS(SHOW_RESULT));
                                             xQueueSendToBack(xLCD_Queue,CLEAR,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                             GPIO_PORTF_DATA_R |= LED_ALL;
                                             while(1)
@@ -679,7 +677,7 @@ void coffee_machine_task( void *pvParameters )
                                                 {
                                                     xQueueSendToBack(xLCD_Queue,CLEAR,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                                     xQueueSendToBack(xLCD_Queue,"00""Cup taken",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
-                                                    vTaskDelay(1000);
+                                                    vTaskDelay(SHOW_TEXT);
                                                     current_state = IDLE;
                                                     snprintf(msg, sizeof(msg), "%c %s %f",
                                                                                 cur_bev.idx,
