@@ -48,6 +48,18 @@
 #define LED_G  0x08   // PF3
 #define LED_ALL (LED_R | LED_Y | LED_G)
 
+#define CARD_CODE_MAX 16
+#define CARD_IDX_MAX 20
+
+#define GRINDING_MS 7500
+#define BREWING_MS 14000
+#define FROTHING_MS 6200
+#define SLOW_FILTER_MS 3000
+#define SLOW_FILTER_VEL 0.6
+
+#define DISPLAY_LEN 7
+#define TEMP_LEN 5
+
 /*****************************   Constants   *******************************/
 
 enum state {IDLE, SELECTION, PAYMENT, PRODUCTION} current_state;
@@ -139,7 +151,7 @@ void coffee_machine_task( void *pvParameters )
     uint8_t method = '0';
 
     // Card method
-    char card_numb[17];
+    char card_numb[CARD_CODE_MAX+1];
     char card_code[5];
     INT8U card_idx = 0;
     uint8_t pressed_number;
@@ -206,11 +218,6 @@ void coffee_machine_task( void *pvParameters )
                         current_state = SELECTION;
                     }
                 }
-
-                /*
-                Checks the UART for commands
-                */
-
                 break;
             }
 
@@ -276,8 +283,8 @@ void coffee_machine_task( void *pvParameters )
                         INT8U stop = 0;
                         if (xQueueReceive(xEnc_rotary_Queue, &inserted_money, pdMS_TO_TICKS(QUEUE_MAX_WAIT)) == pdPASS)
                         {
-                            char display_money_str[7] = {'\0'};
-                            char money[5];
+                            char display_money_str[DISPLAY_LEN] = {'\0'};
+                            char money[TEMP_LEN];
                             current_money = current_money + inserted_money;
                             intToStr(current_money,money);
                             strcat(display_money_str,"10");
@@ -329,7 +336,7 @@ void coffee_machine_task( void *pvParameters )
                         if (xQueueReceive(xKeypad_Queue, &pressed_number, pdMS_TO_TICKS(QUEUE_MAX_WAIT)) == pdPASS)
                         {
 
-                            if (card_idx < 16)
+                            if (card_idx < card_code_len)
                             {
                                 card_numb[card_idx] = pressed_number;
                                 card_idx++;
@@ -339,9 +346,9 @@ void coffee_machine_task( void *pvParameters )
 
                                 xQueueSendToBack(xLCD_Queue,display_card_str,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                             }
-                            else if (card_idx < 20)
+                            else if (card_idx < CARD_IDX_MAX)
                             {
-                                INT8U code_idx = card_idx-16;
+                                INT8U code_idx = card_idx-card_code_len;
                                 card_code[code_idx] = pressed_number;
                                 card_idx++;
                                 char display_code_str[18] = {'\0'};
@@ -350,7 +357,7 @@ void coffee_machine_task( void *pvParameters )
                                 xQueueSendToBack(xLCD_Queue,display_code_str,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                             }
 
-                            if (card_idx == 20)
+                            if (card_idx == CARD_IDX_MAX)
                             {
                                 int last_numb = card_numb[15] - '0';
                                 int last_code = card_code[3] - '0';
@@ -408,14 +415,14 @@ void coffee_machine_task( void *pvParameters )
                                 xQueueSendToBack(xLCD_Queue,"00""Grinding... ",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                 GPIO_PORTF_DATA_R |= LED_ALL;
                                 GPIO_PORTF_DATA_R &= ~LED_Y;
-                                vTaskDelay(pdMS_TO_TICKS(7500));
+                                vTaskDelay(pdMS_TO_TICKS(GRINDING_MS));
 
 
                                 //Brew: 14s, red led
                                 xQueueSendToBack(xLCD_Queue,"00""Brewing... ",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                 GPIO_PORTF_DATA_R |= LED_ALL;
                                 GPIO_PORTF_DATA_R &= ~LED_R;
-                                vTaskDelay(pdMS_TO_TICKS(14000));
+                                vTaskDelay(pdMS_TO_TICKS(BREWING_MS));
 
 
                                 xQueueSendToBack(xLCD_Queue,CLEAR,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
@@ -457,20 +464,20 @@ void coffee_machine_task( void *pvParameters )
                                 xQueueSendToBack(xLCD_Queue,"00""Grinding... ",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                 GPIO_PORTF_DATA_R |= LED_ALL;
                                 GPIO_PORTF_DATA_R &= ~LED_Y;
-                                vTaskDelay(pdMS_TO_TICKS(7500));
+                                vTaskDelay(pdMS_TO_TICKS(GRINDING_MS));
 
 
                                 //Brew: 14s, red led
                                 xQueueSendToBack(xLCD_Queue,"00""Brewing... ",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                 GPIO_PORTF_DATA_R |= LED_ALL;
                                 GPIO_PORTF_DATA_R &= ~LED_R;
-                                vTaskDelay(pdMS_TO_TICKS(14000));
+                                vTaskDelay(pdMS_TO_TICKS(BREWING_MS));
 
                                 //froth milk: 6.2s, green led
                                 xQueueSendToBack(xLCD_Queue,"00""Frothing milk... ",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                 GPIO_PORTF_DATA_R |= LED_ALL;
                                 GPIO_PORTF_DATA_R  &= ~LED_G;
-                                vTaskDelay(pdMS_TO_TICKS(6200));
+                                vTaskDelay(pdMS_TO_TICKS(FROTHING_MS));
 
                                 xQueueSendToBack(xLCD_Queue,CLEAR,pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                 GPIO_PORTF_DATA_R |= LED_ALL;
@@ -574,21 +581,21 @@ void coffee_machine_task( void *pvParameters )
                                         {
 
                                             GPIO_PORTF_DATA_R &= ~LED_Y;
-                                            if (coffeeTimer <= 3000)
+                                            if (coffeeTimer <= SLOW_FILTER_MS)
                                                 amountCoffee += 0.6f/4;
                                             else
                                                 amountCoffee += 1.45f/4;
                                             coffeeTimer+=250;
 
-                                            char display_unit_price[7] = {'\0'};
-                                            char unit_price[5];
+                                            char display_unit_price[DISPLAY_LEN] = {'\0'};
+                                            char unit_price[TEMP_LEN];
                                             intToStr(cur_bev.price, unit_price);
                                             strcat(display_unit_price, "00");
                                             strcat(display_unit_price, unit_price);
                                             xQueueSendToBack(xLCD_Queue, display_unit_price, pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                             xQueueSendToBack(xLCD_Queue, "02""dkk", pdMS_TO_TICKS(QUEUE_MAX_WAIT));
 
-                                            char display_amount[7] = {'\0'};
+                                            char display_amount[DISPLAY_LEN] = {'\0'};
                                             char coffeeamount[5];
                                             intToStr(amountCoffee, coffeeamount);
                                             strcat(display_amount, "07");
@@ -596,8 +603,8 @@ void coffee_machine_task( void *pvParameters )
                                             xQueueSendToBack(xLCD_Queue, display_amount, pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                             xQueueSendToBack(xLCD_Queue, "09""cl", pdMS_TO_TICKS(QUEUE_MAX_WAIT));
 
-                                            char display_str[7] = {'\0'};
-                                            char money[5];
+                                            char display_str[DISPLAY_LEN] = {'\0'};
+                                            char money[TEMP_LEN];
 
                                             intToStr((FP32)(amountCoffee * cur_bev.price), money);
                                             strcat(display_str, "10");
@@ -667,8 +674,8 @@ void coffee_machine_task( void *pvParameters )
                                             xQueueSendToBack(xLCD_Queue,"00""Total amount",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                             xQueueSendToBack(xLCD_Queue,"10""",pdMS_TO_TICKS(QUEUE_MAX_WAIT));
 
-                                            char display_str[7] = {'\0'};
-                                            char money[5];
+                                            char display_str[DISPLAY_LEN] = {'\0'};
+                                            char money[TEMP_LEN];
 
                                             intToStr((FP32)(amountCoffee * cur_bev.price), money);
                                             strcat(display_str, "10");
@@ -676,8 +683,8 @@ void coffee_machine_task( void *pvParameters )
                                             xQueueSendToBack(xLCD_Queue, display_str, pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                             xQueueSendToBack(xLCD_Queue, "13""dkk", pdMS_TO_TICKS(QUEUE_MAX_WAIT));
 
-                                            char display_amount[7] = {'\0'};
-                                            char coffeeamount[5];
+                                            char display_amount[DISPLAY_LEN] = {'\0'};
+                                            char coffeeamount[TEMP_LEN];
                                             intToStr(amountCoffee, coffeeamount);
                                             strcat(display_amount, "18");
                                             strcat(display_amount, coffeeamount);
@@ -719,24 +726,24 @@ void coffee_machine_task( void *pvParameters )
                                                 amountCoffee += 1.45f/4;
                                             coffeeTimer+=250;
 
-                                            char display_unit_price[7] = {'\0'};
-                                            char unit_price[5];
+                                            char display_unit_price[DISPLAY_LEN] = {'\0'};
+                                            char unit_price[TEMP_LEN];
                                             intToStr(cur_bev.price, unit_price);
                                             strcat(display_unit_price, "00");
                                             strcat(display_unit_price, unit_price);
                                             xQueueSendToBack(xLCD_Queue, display_unit_price, pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                             xQueueSendToBack(xLCD_Queue, "02""dkk", pdMS_TO_TICKS(QUEUE_MAX_WAIT));
 
-                                            char display_amount[7] = {'\0'};
-                                            char coffeeamount[5];
+                                            char display_amount[DISPLAY_LEN] = {'\0'};
+                                            char coffeeamount[TEMP_LEN];
                                             intToStr(amountCoffee, coffeeamount);
                                             strcat(display_amount, "07");
                                             strcat(display_amount, coffeeamount);
                                             xQueueSendToBack(xLCD_Queue, display_amount, pdMS_TO_TICKS(QUEUE_MAX_WAIT));
                                             xQueueSendToBack(xLCD_Queue, "09""cl", pdMS_TO_TICKS(QUEUE_MAX_WAIT));
 
-                                            char display_str[7] = {'\0'};
-                                            char money[5];
+                                            char display_str[DISPLAY_LEN] = {'\0'};
+                                            char money[TEMP_LEN];
 
                                             intToStr((FP32)(amountCoffee * cur_bev.price), money);
                                             strcat(display_str, "10");
@@ -762,7 +769,4 @@ void coffee_machine_task( void *pvParameters )
         vTaskDelay(pdMS_TO_TICKS(taskDelay));
     }
 }
-/*
 
-
-*/
