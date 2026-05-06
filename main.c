@@ -38,13 +38,14 @@
 #include "coffee_machine.h"
 #include "switch.h"
 #include "timer.h"
+#include "interface.h"
 
 /*****************************    Defines    *******************************/
 
 /*****************************   Constants   *******************************/
 
 /*****************************   Variables   *******************************/
-QueueHandle_t xSW1_Queue, xSW2_Queue, xEnc_rotary_Queue, xEnc_Button_Queue, xKeypad_Queue, xUART_Queue, xLCD_Queue, xState_Queue, xLogging_Queue, xProduct_queue;
+QueueHandle_t xSW1_Queue, xSW2_Queue, xEnc_rotary_Queue, xEnc_Button_Queue, xKeypad_Queue, xUART_Queue, xLCD_Queue, xState_Queue, xLogging_Queue, xProduct_queue , xInterface_Queue;
 
 
 /*****************************   Functions   *******************************/
@@ -118,13 +119,15 @@ int main(void)
     xLCD_Queue     = xQueueCreate(QUEUE_LENGTH,sizeof(char)*LCD_POS_TO_SEND+sizeof(char)*LCD_CHARS_TO_SEND); //QUEUE_LENGTH,sizeof(INT8U)*LCD_POS_TO_SEND+sizeof(char)*LCD_CHARS_TO_SEND
     xSW1_Queue     = xQueueCreate(1,sizeof(INT8U));
     xSW2_Queue     = xQueueCreate(1,sizeof(INT8U));
+    xInterface_Queue = xQueueCreate(1,sizeof(char)*24);
 
     xTaskCreate( status_led_task, "Status_led", USERTASK_STACK_SIZE, NULL, LOW_PRIO, NULL );
     xTaskCreate( rotary_task, "Rotary", USERTASK_STACK_SIZE, NULL, LOW_PRIO, NULL );
     xTaskCreate( keypad_task, "Keypad", USERTASK_STACK_SIZE, NULL, HIGH_PRIO, NULL );
     xTaskCreate( lcd_task , "Lcd" , USERTASK_STACK_SIZE*4, NULL, MED_PRIO, NULL );
     xTaskCreate( coffee_machine_task , "Coffe_Machine" , USERTASK_STACK_SIZE, NULL, MED_PRIO, NULL );
-    xTaskCreate( switch_task , "Switch" , USERTASK_STACK_SIZE*4, NULL, HIGH_PRIO, NULL );
+    xTaskCreate( switch_task , "Switch" , USERTASK_STACK_SIZE, NULL, HIGH_PRIO, NULL );
+    xTaskCreate( interface_task , "interface" , USERTASK_STACK_SIZE*8, NULL, HIGH_PRIO, NULL );
 
 
     // ---- Task Todo list ----
