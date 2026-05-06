@@ -51,7 +51,7 @@ QueueHandle_t xSW1_Queue, xSW2_Queue, xEnc_rotary_Queue, xEnc_Button_Queue, xKey
 /*****************************   Functions   *******************************/
 void red_led_init(void)
 {
-    int dummy;
+    volatile int dummy;
     SYSCTL_RCGC2_R |= SYSCTL_RCGC2_GPIOF;
     dummy = SYSCTL_RCGC2_R;  // dummy read to allow peripheral to stabilize
 
@@ -64,7 +64,7 @@ void red_led_init(void)
 
 void yellow_led_init(void)
 {
-    int dummy;
+    volatile int dummy;
     SYSCTL_RCGC2_R |= SYSCTL_RCGC2_GPIOF;
     dummy = SYSCTL_RCGC2_R;  // dummy read to allow peripheral to stabilize
 
@@ -76,7 +76,7 @@ void yellow_led_init(void)
 
 void green_led_init(void)
 {
-    int dummy;
+    volatile int dummy;
     SYSCTL_RCGC2_R |= SYSCTL_RCGC2_GPIOF;
     dummy = SYSCTL_RCGC2_R;  // dummy read to allow peripheral to stabilize
 
@@ -93,41 +93,44 @@ static void setupHardware(void)
 *   Function :
 *****************************************************************************/
 {
-  // Put hardware configuration and initialization in here
-
-  // Warning: If you do not initialize the hardware clock, the timings will be inaccurate
-
+    // Put hardware configuration and initialization in here
+    // Warning: If you do not initialize the hardware clock, the timings will be inaccurate
     init_systick();
     status_led_init();
-    lcd_init();
+
+    // Initialize physical inputs
     keypad_init();
     rot_enc_init();
+    switch_init();
 
+    // Initialize phyiscal outputs
+    lcd_init();
     green_led_init();
     yellow_led_init();
     red_led_init();
-    switch_init();
+
 }
 
 int main(void)
-{
+ {
     setupHardware();
 
+    // Queues
     xEnc_rotary_Queue = xQueueCreate(QUEUE_LENGTH,sizeof(INT16S));
     xEnc_Button_Queue  = xQueueCreate(QUEUE_LENGTH,sizeof(INT8U));
     xKeypad_Queue  = xQueueCreate(QUEUE_LENGTH,sizeof(uint8_t));
-    xLCD_Queue     = xQueueCreate(QUEUE_LENGTH,sizeof(char)*LCD_POS_TO_SEND+sizeof(char)*LCD_CHARS_TO_SEND); //QUEUE_LENGTH,sizeof(INT8U)*LCD_POS_TO_SEND+sizeof(char)*LCD_CHARS_TO_SEND
-    xSW1_Queue     = xQueueCreate(1,sizeof(INT8U));
-    xSW2_Queue     = xQueueCreate(1,sizeof(INT8U));
-    xInterface_Queue = xQueueCreate(1,sizeof(char)*24);
+    xLCD_Queue     = xQueueCreate(QUEUE_LENGTH,sizeof(char)*LCD_POS_TO_SEND+sizeof(char)*LCD_CHARS_TO_SEND);
+    xSW1_Queue     = xQueueCreate(QUEUE_LENGTH,sizeof(INT8U));
+    xSW2_Queue     = xQueueCreate(QUEUE_LENGTH,sizeof(INT8U));
+    xInterface_Queue = xQueueCreate(QUEUE_LENGTH,sizeof(char)*24);
 
+    // Tasks
     xTaskCreate( status_led_task, "Status_led", USERTASK_STACK_SIZE, NULL, LOW_PRIO, NULL );
     xTaskCreate( rotary_task, "Rotary", USERTASK_STACK_SIZE, NULL, LOW_PRIO, NULL );
     xTaskCreate( keypad_task, "Keypad", USERTASK_STACK_SIZE, NULL, HIGH_PRIO, NULL );
-    xTaskCreate( lcd_task , "Lcd" , USERTASK_STACK_SIZE*4, NULL, MED_PRIO, NULL );
+    xTaskCreate( lcd_task , "Lcd" , USERTASK_STACK_SIZE*2, NULL, MED_PRIO, NULL );
     xTaskCreate( coffee_machine_task , "Coffe_Machine" , USERTASK_STACK_SIZE, NULL, MED_PRIO, NULL );
-    xTaskCreate( switch_task , "Switch" , USERTASK_STACK_SIZE, NULL, HIGH_PRIO, NULL );
-    xTaskCreate( interface_task , "interface" , USERTASK_STACK_SIZE*8, NULL, HIGH_PRIO, NULL );
+    xTaskCreate( switch_task , "Switch" , USERTASK_STACK_SIZE*4, NULL, HIGH_PRIO, NULL );
 
 
     // ---- Task Todo list ----

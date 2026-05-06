@@ -64,7 +64,7 @@ void lcd_init(void)
 *   Function : Initialize the gpio pins for the lcd display
 ******************************************************************************/
 {
-    INT8S dummy;
+    volatile int dummy;
     // Enable the GPIO port that is used for the on-board LED.
     SYSCTL_RCGC2_R |= SYSCTL_RCGC2_GPIOC | SYSCTL_RCGC2_GPIOD;
 

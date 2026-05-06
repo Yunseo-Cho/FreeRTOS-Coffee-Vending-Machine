@@ -2,7 +2,7 @@
 * University of Southern Denmark
 * Embedded C Programming (ECP)
 *
-* MODULENAME.: button.c
+* MODULENAME.: switch.c
 *
 * PROJECT....: ECP
 *
@@ -43,7 +43,7 @@ void switch_init(void)
 {
     volatile int dummy;
 
-    SYSCTL_RCGC2_R |= SYSCTL_RCGC2_GPIOF;
+    SYSCTL_RCGC2_R |= SYSCTL_RCGC2_GPIOF    ;
     dummy = SYSCTL_RCGC2_R;
 
     GPIO_PORTF_LOCK_R = 0x4C4F434B;
@@ -56,62 +56,39 @@ void switch_init(void)
 
 INT8U sw1_pressed(void)
 {
-  return !(GPIO_PORTF_DATA_R & SW1_MASK);
+    return !(GPIO_PORTF_DATA_R & SW1_MASK);
 }
 
 INT8U sw2_pressed(void)
 {
-  return !(GPIO_PORTF_DATA_R & SW2_MASK);
+    return !(GPIO_PORTF_DATA_R & SW2_MASK);
 }
 
 void switch_task(void *pvParameters)
 {
-    GPIO_PORTF_DATA_R |= 0x04;
-    vTaskDelay(pdMS_TO_TICKS(500));
-    GPIO_PORTF_DATA_R &= ~0x04;
+    INT8U pre_sw1 = 0;
+    INT8U pre_sw2 = 0;
 
-  uint8_t pre_sw1 = 0;
-  uint8_t pre_sw2 = 0;
-  /*
-  while (1)
+    while (1)
     {
-      uint8_t sw1 = sw1_pressed();
-      uint8_t sw2 = sw2_pressed();
+        INT8U sw1 = sw1_pressed();
+        INT8U sw2 = sw2_pressed();
 
-      if (sw1_pressed())
-      {
-          xQueueOverwrite(xSW1_Queue, &sw1);
-          pre_sw1 = sw1;
-      }
+        if (sw1 != pre_sw1)
+        {
+            //GPIO_PORTF_DATA_R ^= 0x08;
+            xQueueSend(xSW1_Queue, &sw1, 0);
+            pre_sw1 = sw1;
+        }
 
-      if (sw2 != pre_sw2)
-      {
-          xQueueOverwrite(xSW2_Queue, &sw2);
-          pre_sw2 = sw2;
-      }
+        if (sw2 != pre_sw2)
+        {
+            //GPIO_PORTF_DATA_R ^= 0x08;
+            xQueueSend(xSW2_Queue, &sw2, 0);
+            pre_sw2 = sw2;
+        }
 
-      vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
-    */
-
-  while (1)
-  {
-    uint8_t sw1 = sw1_pressed();
-    uint8_t sw2 = sw2_pressed();
-
-    if (sw1 != pre_sw1)
-    {
-        xQueueOverwrite(xSW1_Queue, &sw1);
-        pre_sw1 = sw1;
-    }
-
-    if (sw2 != pre_sw2)
-    {
-        xQueueOverwrite(xSW2_Queue, &sw2);
-        pre_sw2 = sw2;
-    }
-
-    vTaskDelay(pdMS_TO_TICKS(50));
-  }
-
 }
+

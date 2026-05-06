@@ -55,7 +55,7 @@ void keypad_init(void)
      * Y3 - KEYB H      PE1
      * Y4 - KEYB G      PE0
      ******************************************************/
-    int dummy;
+    volatile int dummy;
     SYSCTL_RCGC2_R  |=  (SYSCTL_RCGC2_GPIOA | SYSCTL_RCGC2_GPIOE);
 
     // Do a dummy read to insert a few cycles after enabling the peripheral.
