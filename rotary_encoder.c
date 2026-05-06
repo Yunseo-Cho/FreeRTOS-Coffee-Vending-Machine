@@ -139,20 +139,6 @@ void rotary_task(void *pvParameters)
                     }
                 }
 
-                /*
-                if (coin >= CIRCLE_ANGLE)
-                {
-                    coin = coin - CIRCLE_ANGLE;
-                }
-                else if (coin <= -CIRCLE_ANGLE)
-                {
-                    coin = coin + CIRCLE_ANGLE;
-                }
-                */
-
-
-
-
             xQueueSend(xEnc_rotary_Queue, &coin, 0);
 
             }
