@@ -29,6 +29,7 @@
 #include "queue.h"
 
 #include "rtos_def.h"
+#include "globals.h"
 
 #include "status_led.h"
 
@@ -121,7 +122,7 @@ int main(void)
     xLCD_Queue     = xQueueCreate(QUEUE_LENGTH,sizeof(char)*LCD_POS_TO_SEND+sizeof(char)*LCD_CHARS_TO_SEND);
     xSW1_Queue     = xQueueCreate(QUEUE_LENGTH,sizeof(INT8U));
     xSW2_Queue     = xQueueCreate(QUEUE_LENGTH,sizeof(INT8U));
-    xInterface_Queue = xQueueCreate(QUEUE_LENGTH,sizeof(char)*24);
+    xInterface_Queue = xQueueCreate(QUEUE_LENGTH,sizeof(char)*TRANSACTION_LENGTH);
 
     // Tasks
     xTaskCreate( status_led_task, "Status_led", USERTASK_STACK_SIZE, NULL, LOW_PRIO, NULL );

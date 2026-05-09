@@ -31,6 +31,7 @@
 
 
 /*****************************    Defines    *******************************/
+#define TASKDELAY 5
 /*****************************   Constants   *******************************/
 /*****************************   Variables   *******************************/
 extern QueueHandle_t xKeypad_Queue;
@@ -98,7 +99,6 @@ BaseType_t check_column(INT8U x)
     if(y)
     {
         INT8U ch = key_catch(x, row(y));
-        GPIO_PORTF_DATA_R &= ~0x04;  // Turn ON LED
         xQueueSendToBack(xKeypad_Queue, &ch, pdMS_TO_TICKS(QUEUE_MAX_WAIT));
         return pdTRUE;
     }
@@ -141,10 +141,9 @@ void keypad_task(void *pvParameters)
             if(!(GPIO_PORTE_DATA_R & 0x0F))
             {
                 pressed = 0;
-                GPIO_PORTF_DATA_R |= 0x04;
             }
         }
 
-        vTaskDelay(pdMS_TO_TICKS(5));
+        vTaskDelay(pdMS_TO_TICKS(TASKDELAY));
     }
 }

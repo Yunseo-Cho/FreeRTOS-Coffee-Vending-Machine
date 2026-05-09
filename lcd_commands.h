@@ -4,8 +4,5 @@
 
 
 #define CLEAR "clear"
-#define STARTSCREEN  "start"
-#define SEL_PRODUCT "product"
-#define SEL_PAYMENT "payment"
 
 #endif

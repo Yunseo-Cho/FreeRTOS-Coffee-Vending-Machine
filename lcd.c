@@ -18,6 +18,8 @@
 *****************************************************************************/
 
 /***************************** Include files *******************************/
+#include "lcd.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -25,11 +27,12 @@
 #include "tm4c123gh6pm.h"
 #include "emp_type.h"
 
-#include "lcd.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+
+#include "rtos_def.h"
 
 #include "lcd_commands.h"
 
@@ -216,84 +219,34 @@ void lcd_task( void *pvParameters)
 *   Function : Displays info from queues
 ******************************************************************************/
 {
-    vTaskDelay( pdMS_TO_TICKS(500) );
+    vTaskDelay( pdMS_TO_TICKS(TASKDELAY) );
     ClearDisplay();
     INT8U row = 0;
     INT8U col = 0;
-    char str_to_print[16];
+    char str_to_print[LCD_CHARS_TO_SEND];
     while(1)
     {
-        char ch[18];
+        char chArr[LCD_POS_TO_SEND+LCD_CHARS_TO_SEND];
 
-        if (xQueueReceive(xLCD_Queue, &ch, pdMS_TO_TICKS(QUEUE_MAX_WAIT)) == pdPASS)
+        if (xQueueReceive(xLCD_Queue, &chArr, pdMS_TO_TICKS(QUEUE_MAX_WAIT)) == pdPASS)
         {
-            if (strcmp(ch, CLEAR) == 0)
+            if (strcmp(chArr, CLEAR) == 0)
             {
                 ClearDisplay();
             }
             else
             {
-                // '1' '0' "hello"
-                row = ch[0] - '0';
-                col = ch[1] - '0';
+                row = chArr[0] - '0';
+                col = chArr[1] - '0';
                 SetCursor ((INT8U)row,(INT8U)col);
 
-                strcpy(str_to_print,ch+2);
+                strcpy(str_to_print,chArr+LCD_POS_TO_SEND);
                 WriteString (str_to_print);
             }
-            /*
-            if (strcmp(ch, STARTSCREEN) == 0)
-            {
-                ClearDisplay();
-                SetCursor( 0,0 );
-                WriteString("Coffee Machine");
-                SetCursor( 1,0 );
-                WriteString("Click to use");
-            }
-            else if (strcmp(ch, SEL_PRODUCT) == 0)
-            {
-                ClearDisplay();
-                SetCursor( 0,0 );
-                WriteString("Product:");
-                SetCursor( 1,0 );
-                WriteString("1: Lat 2: Eps 3: Fil");
-            }
-            else if (strcmp(ch, SEL_PAYMENT) == 0)
-            {
-                ClearDisplay();
-                SetCursor( 0,0 );
-                WriteString("1: Cash  2: Card?");
-            }
-            else
-            {
-                ClearDisplay();
-                SetCursor(0,0);
-                WriteString(ch);
-            }
-            */
-
         }
-        vTaskDelay( pdMS_TO_TICKS(50) );
+        vTaskDelay( pdMS_TO_TICKS(TASKDELAY) );
     }
 }
-
-// 13"Hello"
-// row = ch[1]
-// col = ch[2]
-// setcursor(row,col)
-// string = ch[3;end-1]
-// writestring(string)
-
-/*
-uint8_t ch;
-
-if (xQueueReceive(xKeypad_Queue, &ch, pdMS_TO_TICKS(QUEUE_MAX_WAIT)) == pdPASS)
-{
-    ClearDisplay();
-    char str_ch[1] = (char)ch;
-    SetCursor( 0,0 );
-    WriteString(str_ch);
-}*/
 
 /****************************** End Of Module *******************************/
 

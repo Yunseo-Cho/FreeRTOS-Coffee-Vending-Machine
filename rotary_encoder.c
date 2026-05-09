@@ -86,7 +86,6 @@ void rotary_task(void *pvParameters)
         if (P != pre_P)
         {
             xQueueOverwrite(xEnc_Button_Queue, &P);
-            GPIO_PORTF_DATA_R ^= 0x02;  // Turn ON LED
             pre_P = P;
         }
 
@@ -138,6 +137,7 @@ void rotary_task(void *pvParameters)
 
                     }
                 }
+
 
             xQueueSend(xEnc_rotary_Queue, &coin, 0);
 

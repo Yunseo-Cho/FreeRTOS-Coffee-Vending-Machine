@@ -1,9 +1,4 @@
-/*
- * interface.c
- *
- *  Created on: 1 May 2026
- *      Author: jonat
- */
+#include "interface.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -25,7 +20,6 @@
 
 
 extern QueueHandle_t xInterface_Queue;
-//extern Product lat , esp , fil;
 
 typedef struct {
     INT32U time;
@@ -79,21 +73,21 @@ void write_string(char *str)
 
 void interface_task ( void *pvParameters )
 {
-    uart0_init(115200,8,1,'n');
+    uart0_init(UART_BAUDRATE,UART_DATABITS,UART_STOPBITS,'n');
 
     Transaction sales[SALESLENGTH];
     INT8U saleIdx = 0;
     INT32U time_since_boot;
 
-    char transaction_info[24];
+    char transaction_info[TRANSACTION_LENGTH];
     Product purchased_beverage;
-    char trans_method[17];
+    char trans_method[TRANS_METHOD_LENGTH];
     char* endptr;
     FP32 amount;
 
-    char uart_string[96];
+    char uart_string[UART_SEND_LENGTH];
 
-    char uart_rx_string[24];
+    char uart_rx_string[UART_RECEIVE_LENGTH];
     char uart_rx_curchar;
     INT16U uart_rx_ArrIdx = 0;
 
@@ -108,10 +102,10 @@ void interface_task ( void *pvParameters )
             // receive data
             time_since_boot = xTaskGetTickCount() * portTICK_PERIOD_MS;
 
-            char* trans_tok[8];
-            INT8U n_tok_trans = split(transaction_info,' ',trans_tok,3);
+            char* trans_tok[MAXTOKENS];
+            INT8U n_tok_trans = split(transaction_info,' ',trans_tok,MAXTOKENS);
 
-            switch (trans_tok[0][0])
+            switch (trans_tok[PRODUCT_IDX][0])
             {
             case '1':
                 purchased_beverage = esp;
@@ -126,9 +120,9 @@ void interface_task ( void *pvParameters )
                 break;
             }            
 
-            strcpy(trans_method,trans_tok[1]);
+            strcpy(trans_method,trans_tok[METHOD_IDX]);
 
-            amount = strtof(trans_tok[2],&endptr);
+            amount = strtof(trans_tok[AMOUNT_IDX],&endptr);
 
             Transaction purchase;
             purchase.time    = time_since_boot;
@@ -165,38 +159,37 @@ void interface_task ( void *pvParameters )
         {
             flag = 0;
             uart_rx_ArrIdx = 0;
-            //write_string(uart_rx_string);
 
             //** Set price to value **//
-            char* uart_tok[8];
-            INT8U n_tok_uart = split(uart_rx_string,' ',uart_tok,8);
+            char* uart_tok[MAXTOKENS];
+            INT8U n_tok_uart = split(uart_rx_string,' ',uart_tok,MAXTOKENS);
 
-            if (strcmp(uart_tok[0],"set") == 0)
+            if (strcmp(uart_tok[CMD_IDX],"set") == 0)
             {
-                INT8U price = strtol(uart_tok[2],&endptr,10);
+                INT8U price = strtol(uart_tok[NEW_PRICE_IDX],&endptr,BASE10);
 
-                if (strcmp(uart_tok[1],"latte") == 0)
+                if (strcmp(uart_tok[PRODUCT_NAME_IDX],"latte") == 0)
                 {
                     lat.price = price;
                     snprintf(uart_string, sizeof(uart_string), "price of %s is set to %d\n",
-                                                        lat.name,
-                                                        lat.price);
+                                                                lat.name,
+                                                                lat.price);
                     write_string(uart_string);
                 }
-                else if (strcmp(uart_tok[1],"espresso") == 0)
+                else if (strcmp(uart_tok[PRODUCT_NAME_IDX],"espresso") == 0)
                 {
                     esp.price = price;
                     snprintf(uart_string, sizeof(uart_string), "price of %s is set to %d\n",
-                                                        esp.name,
-                                                        esp.price);
+                                                                esp.name,
+                                                                esp.price);
                     write_string(uart_string);
                 }
-                else if (strcmp(uart_tok[1],"filter") == 0)
+                else if (strcmp(uart_tok[PRODUCT_NAME_IDX],"filter") == 0)
                 {
                     fil.price = price;
                     snprintf(uart_string, sizeof(uart_string), "price of %s is set to %d\n",
-                                                        fil.name,
-                                                        fil.price);
+                                                                fil.name,
+                                                                fil.price);
                     write_string(uart_string);
                 }
             }
@@ -204,10 +197,10 @@ void interface_task ( void *pvParameters )
 
 
             //** Query sales **//
-            if (strcmp(uart_tok[0],"query") == 0)
+            if (strcmp(uart_tok[CMD_IDX],"query") == 0)
             {
                 INT8U transIdx = 0;
-                if (strcmp(uart_tok[1],"all") == 0)
+                if (strcmp(uart_tok[CMD2_IDX],"all") == 0)
                 {
                     //** Search product 1 **//
                     for (transIdx = 0 ; transIdx < SALESLENGTH ; transIdx++)
@@ -219,11 +212,11 @@ void interface_task ( void *pvParameters )
                         if (sales[transIdx].product.idx == esp.idx)
                         {
                             snprintf(uart_string, sizeof(uart_string), "time: %lu, method: %s, drink: %s, total price: %.2f, Units: %.2f\n",
-                                                                     sales[transIdx].time,
-                                                                     sales[transIdx].method,
-                                                                     sales[transIdx].product.name,
-                                                                     sales[transIdx].product.price * sales[transIdx].amount,
-                                                                     sales[transIdx].amount);
+                                                                    sales[transIdx].time,
+                                                                    sales[transIdx].method,
+                                                                    sales[transIdx].product.name,
+                                                                    sales[transIdx].product.price * sales[transIdx].amount,
+                                                                    sales[transIdx].amount);
 
                             write_string(uart_string);
                         }
@@ -272,7 +265,7 @@ void interface_task ( void *pvParameters )
                 }
 
 
-                if (strcmp(uart_tok[1],"cash") == 0)
+                if (strcmp(uart_tok[CMD2_IDX],"cash") == 0)
                 {
                     FP32 cashRev = 0;
                     for (transIdx = 0 ; transIdx < SALESLENGTH ; transIdx++)
@@ -286,7 +279,7 @@ void interface_task ( void *pvParameters )
                     write_string(uart_string);
                 }
 
-                if (strcmp(uart_tok[1],"card") == 0)
+                if (strcmp(uart_tok[CMD2_IDX],"card") == 0)
                 {
                     FP32 cardRev = 0;
                     for (transIdx = 0 ; transIdx < SALESLENGTH ; transIdx++)
@@ -301,7 +294,7 @@ void interface_task ( void *pvParameters )
                 }
             }
 
-            if (strcmp(uart_tok[1],"uptime") == 0)
+            if (strcmp(uart_tok[CMD2_IDX],"uptime") == 0)
             {
                 time_since_boot = xTaskGetTickCount() * portTICK_PERIOD_MS;
                 snprintf(uart_string, sizeof(uart_string), "Total uptime: %d [ms]\n",time_since_boot);
@@ -313,6 +306,6 @@ void interface_task ( void *pvParameters )
             memset(uart_rx_string, 0, sizeof(uart_rx_string));
             memset(uart_string, 0, sizeof(uart_string));
         }
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(TASKDELAY));
     }
 }

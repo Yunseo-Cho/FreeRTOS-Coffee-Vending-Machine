@@ -51,17 +51,18 @@
 #define SLOW_FILTER_MS 3000
 #define SLOW_FILTER_VEL 0.6f
 #define FILTER_VEL 1.45f
-#define INACTIVITY_TIME 5
 
 #define DISPLAY_LEN 7
 #define TEMP_LEN 5
 
-#define SHOW_TEXT 1000
-#define SHOW_RESULT 5000
-#define INACTIVE_MS 1000
-
 #define FREQ 4
 #define PERIOD 250
+
+#define WAIT100 100
+#define WAIT200 200
+#define WAIT500 500
+#define WAIT1000 1000
+#define WAIT5000 5000
 
 /*****************************   Constants   *******************************/
 
