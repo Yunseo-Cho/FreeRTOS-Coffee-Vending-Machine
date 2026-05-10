@@ -16,14 +16,15 @@
 * 260314  MoH   Module created.
 *
 *****************************************************************************/
-#ifndef GPIO_H_
-#define GPIO_H_
+#ifndef LCD_H_
+#define LCD_H_
 
 /***************************** Include files *******************************/
 #include <stdint.h>
 #include "tm4c123gh6pm.h"
 #include "emp_type.h"
 #include "FreeRTOS.h"
+
 /*****************************    Defines    *******************************/
 #define TASKDELAY 50
 
@@ -46,7 +47,7 @@ void lcd_startup_sequence(void);
 *   Function : Send a startup sequence to the LCD display
 ******************************************************************************/
 
-void pulseEnable(void);
+void enablePulse(void);
 /*****************************************************************************
 *   Input    : 
 *   Output   : 
@@ -54,21 +55,21 @@ void pulseEnable(void);
 ******************************************************************************/
 
 
-void write4(INT16U data);
+void write4(INT8U data);
 /*****************************************************************************
-*   Input    : Data
+*   Input    : Data to send to LCD (4 bits)
 *   Output   :
 *   Function : sends data to LCD display
 ******************************************************************************/
 
-void command(INT16U cmd);
+void command(INT8U cmd);
 /*****************************************************************************
-*   Input    : Command
+*   Input    : Command to send to LCD
 *   Output   :
 *   Function : Init command mode and send commands
 ******************************************************************************/
 
-void WriteChar(INT16U d);
+void WriteChar(INT8U d);
 /*****************************************************************************
 *   Input    : integer value of char
 *   Output   :

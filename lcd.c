@@ -101,20 +101,20 @@ void lcd_startup_sequence(void)
     // 0xFF, stop
 
     // Startup sequence
-    write4(0x30);
-    write4(0x30);
-    write4(0x30);
+    write4(0x03);   // Reset sequence 0x03 / 0x30
+    write4(0x03);   // Reset sequence 0x03 / 0x30
+    write4(0x03);   // Reset sequence 0x03 / 0x30
 
-    write4(0x20);
+    write4(0x02);   // Set 4bit interface 0x02 / 0x20
 
-    command(0x28);
+    command(0x28);  // Now the commands can be sent in 4 bit mode, set 2 lines display
     command(0x0C);
     command(0x01);
     command(0x06);
 }
 
 // Enable pulse
-void pulseEnable(void)
+void enablePulse(void)
 /*****************************************************************************
 *   Input    : 
 *   Output   : 
@@ -128,19 +128,19 @@ void pulseEnable(void)
 }
 
 // Communicating functions
-void write4(INT16U data)
+void write4(INT8U data)
 /*****************************************************************************
-*   Input    : Data
+*   Input    : Data to send to LCD (4 bits) 
 *   Output   :
 *   Function : sends data to LCD display
 ******************************************************************************/
 {
     LCD_PORTC &= ~0xF0;
     LCD_PORTC |= (data << 4);
-    pulseEnable();
+    enablePulse();
 }
 
-void command(INT16U cmd)
+void command(INT8U cmd)
 /*****************************************************************************
 *   Input    : Command
 *   Output   :
@@ -151,8 +151,6 @@ void command(INT16U cmd)
     write4(cmd >> 4);
     write4(cmd);
 }
-
-// ===== SEND BYTE =====
 
 void SetCursor(INT8U row, INT8U col)
 /*****************************************************************************
@@ -170,7 +168,7 @@ void SetCursor(INT8U row, INT8U col)
     command(0x80 | pos_address);
 }
 
-void WriteChar(INT16U d)
+void WriteChar(INT8U d)
 /*****************************************************************************
 *   Input    : integer value of char
 *   Output   :
