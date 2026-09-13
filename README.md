@@ -159,7 +159,7 @@ xProduct_queue
 
 The system is divided into multiple FreeRTOS tasks, with queues used for inter-task communication and event handling.
 
-![Task Architecture](images/Task_diagram.png)
+![Task Architecture](images/Task_diagram.jpg)
 
 ### State Machine
 
